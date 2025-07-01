@@ -1,0 +1,42 @@
+# Creating a Customer Lifetime Value Predicting Model 
+Customer Lifetime Value (LTV) is a prediction of the total revenue a business can expect from 
+a single customer over the entire duration of their relationship. 
+#code to predict the model 
+import pandas as pd 
+import numpy as np 
+from datetime import timedelta, datetime 
+np.random.seed(42) 
+# Create a dataset 
+n_customers = 10 
+n_transactions = 100 
+customers = [f"C{i:03}" for i in np.random.randint(1, n_customers+1, 
+n_transactions)] 
+dates = [datetime(2024, 1, 1) + timedelta(days=np.random.randint(0, 180)) for 
+_ in range(n_transactions)] 
+amounts = np.random.randint(100, 1000, n_transactions) 
+df = pd.DataFrame({ 
+"customer_id": customers, 
+"transaction_date": dates, 
+"purchase_amount": amounts 
+}) 
+# Save to CSV (optional) 
+df.to_csv("transactions.csv", index=False) 
+print("dataset created.") 
+# Now apply the LTV code 
+customer_df = df.groupby('customer_id').agg({ 
+'purchase_amount': ['sum', 'mean', 'count'], 
+'transaction_date': ['min', 'max'] 
+}) 
+customer_df.columns = ['total_revenue', 'avg_order_value', 'num_orders', 
+'first_purchase', 'last_purchase'] 
+customer_df['tenure_days'] = (customer_df['last_purchase'] - 
+customer_df['first_purchase']).dt.days 
+customer_df['tenure_months'] = customer_df['tenure_days'] / 30.0 
+customer_df['frequency'] = customer_df['num_orders'] / 
+(customer_df['tenure_months'] + 1e-6) 
+assumed_lifetime_months = 12 
+customer_df['ltv'] = customer_df['avg_order_value'] * customer_df['frequency'] 
+* assumed_lifetime_months 
+ 
+print(customer_df[['avg_order_value', 'frequency', 
+'ltv']].sort_values(by="ltv", ascending=False)) 
